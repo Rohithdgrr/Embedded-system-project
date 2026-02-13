@@ -1,0 +1,379 @@
+
+import React, { useRef, useEffect, useState, useCallback } from 'react';
+import { Camera, Shield, Play, Square, Activity, Pause, Download, Video, Maximize2, Wifi, Eye, Brain } from 'lucide-react';
+import { aiService, AIDetection } from '../frontend/services/aiService';
+import { AlertLevel, ProctorAlert, DetectionStats } from '../types';
+import { ClayCard } from './ClayCard';
+import { ClayButton } from './ClayButton';
+
+interface LiveMonitoringProps {
+  onNewAlert: (alert: ProctorAlert) => void;
+  updateIntegrityScore: (score: number) => void;
+  updateStats: (stats: Omit<DetectionStats, 'expectedCount'>) => void;
+  streamUrl?: string;
+  isExternalStream?: boolean;
+}
+
+export const LiveMonitoring: React.FC<LiveMonitoringProps> = ({
+  onNewAlert,
+  updateIntegrityScore,
+  updateStats,
+  streamUrl,
+  isExternalStream
+}) => {
+  const imgRef = useRef<HTMLImageElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isMonitoring, setIsMonitoring] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [aiConnected, setAiConnected] = useState(false);
+  const [streamError, setStreamError] = useState<string | null>(null);
+  const [detectionError, setDetectionError] = useState<string | null>(null);
+  const [useDirectCamera, setUseDirectCamera] = useState(true);
+  const [currentFrame, setCurrentFrame] = useState<string | null>(null);
+  const [mediapipeLoaded, setMediapipeLoaded] = useState(false);
+  const [headPoseCount, setHeadPoseCount] = useState(0);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const pollTimerRef = useRef<number | null>(null);
+
+  const checkAIConnection = useCallback(async () => {
+    try {
+      const details = await aiService.getHealthDetails();
+      if (details) {
+        setAiConnected(true);
+        setMediapipeLoaded(details.mediapipe_loaded);
+        return true;
+      }
+      setAiConnected(false);
+      return false;
+    } catch {
+      setAiConnected(false);
+      return false;
+    }
+  }, []);
+
+  const handleScreenshot = useCallback(() => {
+    if (!currentFrame) return;
+    const link = document.createElement('a');
+    link.download = `proctor-screenshot-${new Date().getTime()}.png`;
+    link.href = `data:image/jpeg;base64,${currentFrame}`;
+    link.click();
+  }, [currentFrame]);
+
+  const toggleFullscreen = useCallback(() => {
+    if (!containerRef.current) return;
+
+    if (!document.fullscreenElement) {
+      containerRef.current.requestFullscreen().catch(err => {
+        console.error(`Error attempting to enable full-screen mode: ${err.message}`);
+      });
+    } else {
+      document.exitFullscreen();
+    }
+  }, []);
+
+  useEffect(() => {
+    checkAIConnection();
+    const interval = setInterval(checkAIConnection, 5000);
+    return () => clearInterval(interval);
+  }, [checkAIConnection]);
+
+  const stopAll = useCallback(async () => {
+    if (pollTimerRef.current) {
+      clearInterval(pollTimerRef.current);
+      pollTimerRef.current = null;
+    }
+    try {
+      if (useDirectCamera) {
+        await aiService.stopWebcam();
+      } else {
+        await aiService.stopStream();
+      }
+    } catch (e) {
+      console.error('Error stopping:', e);
+    }
+    setCurrentFrame(null);
+  }, [useDirectCamera]);
+
+  const pollFrames = useCallback(async (isDirect: boolean) => {
+    try {
+      const { frame, result } = isDirect
+        ? await aiService.getWebcamFrame()
+        : await aiService.getFrame();
+
+      if (frame) {
+        setCurrentFrame(frame);
+      }
+
+      if (result) {
+        const integrityScore = aiService.calculateIntegrityScore(result);
+        updateIntegrityScore(integrityScore);
+
+        const stats = aiService.getDetectionStats(result);
+        updateStats(stats);
+
+        if (result.head_poses) {
+          setHeadPoseCount(result.head_poses.length);
+        }
+
+        const alerts = aiService.convertDetectionsToAlerts(result);
+        alerts.forEach(alertData => {
+          onNewAlert({
+            ...alertData,
+            id: crypto.randomUUID(),
+            timestamp: new Date()
+          } as ProctorAlert);
+        });
+      }
+    } catch (err) {
+      // Frame not yet available, this is normal during startup
+    }
+  }, [onNewAlert, updateIntegrityScore, updateStats]);
+
+  const startMonitoring = async () => {
+    try {
+      setDetectionError(null);
+      setStreamError(null);
+
+      const aiHealthy = await checkAIConnection();
+      if (!aiHealthy) {
+        setStreamError('AI Server not running. Start Python AI server on port 5000 first.');
+        return;
+      }
+
+      if (!streamUrl || streamUrl === 'direct') {
+        // LAPTOP CAMERA MODE: Let the Python backend handle the webcam via OpenCV
+        setUseDirectCamera(true);
+
+        try {
+          console.log('Starting webcam via AI server...');
+          await aiService.startWebcam(0);
+          console.log('Webcam started on AI server');
+        } catch (e: any) {
+          console.error('Failed to start webcam:', e);
+          setStreamError(e?.message || 'Failed to start webcam on AI server');
+          return;
+        }
+
+        setIsMonitoring(true);
+
+        // Start polling for frames with detections
+        pollTimerRef.current = window.setInterval(() => {
+          pollFrames(true);
+        }, 500);
+
+        return;
+      }
+
+      // IP CAMERA / DROIDCAM MODE
+      setUseDirectCamera(false);
+
+      try {
+        console.log('Starting IP camera stream:', streamUrl);
+        await aiService.startStream(streamUrl);
+        console.log('IP stream started on AI server');
+      } catch (e: any) {
+        console.error('Failed to start IP stream:', e);
+        setStreamError(e?.message || 'Failed to start IP camera stream');
+        return;
+      }
+
+      setIsMonitoring(true);
+
+      // Start polling for frames
+      pollTimerRef.current = window.setInterval(() => {
+        pollFrames(false);
+      }, 500);
+
+    } catch (err: any) {
+      console.error("Error starting monitoring:", err);
+      setStreamError(err.message || "Failed to start camera");
+    }
+  };
+
+  const stopMonitoring = async () => {
+    await stopAll();
+    setIsMonitoring(false);
+    setIsPaused(false);
+    setCurrentFrame(null);
+    setHeadPoseCount(0);
+  };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (pollTimerRef.current) {
+        clearInterval(pollTimerRef.current);
+      }
+    };
+  }, []);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between mb-2">
+        <h2 className="text-2xl font-bold flex items-center gap-2">
+          <Activity className="text-[#6C5CE7]" /> {isExternalStream ? 'Remote Feed' : 'Direct Monitor'}
+        </h2>
+        <div className="flex gap-2 items-center">
+          {!aiConnected && isMonitoring && (
+            <span className="text-xs text-red-500 flex items-center gap-1">
+              <Wifi size={12} /> AI Disconnected
+            </span>
+          )}
+          {!isMonitoring ? (
+            <ClayButton onClick={startMonitoring} variant="primary" className="px-4 py-2">
+              <Play size={18} /> Start Session
+            </ClayButton>
+          ) : (
+            <ClayButton onClick={stopMonitoring} variant="danger" className="px-4 py-2">
+              <Square size={18} /> Stop
+            </ClayButton>
+          )}
+        </div>
+      </div>
+
+      {streamError && (
+        <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-2 rounded-xl text-sm mb-2">
+          {streamError}
+        </div>
+      )}
+
+      {detectionError && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm mb-2">
+          {detectionError}
+        </div>
+      )}
+
+      <div className="relative group" ref={containerRef}>
+        <ClayCard className="relative overflow-hidden aspect-video bg-[#2D3436] flex items-center justify-center p-0 border-4 border-white shadow-xl">
+          {!isMonitoring ? (
+            <div className="text-center p-8">
+              <div className="w-24 h-24 bg-[#F5F0EB]/10 rounded-full flex items-center justify-center mx-auto mb-6 clay-inset">
+                <Camera size={48} className="text-[#636E72]" />
+              </div>
+              <p className="text-white/60 font-medium text-lg">Waiting for connection...</p>
+              {!aiConnected && (
+                <p className="text-red-400 text-sm mt-2">AI Server not responding</p>
+              )}
+              {aiConnected && (
+                <div className="flex items-center justify-center gap-4 mt-3">
+                  <span className="text-xs text-green-400 flex items-center gap-1">
+                    <Eye size={12} /> YOLO Ready
+                  </span>
+                  {mediapipeLoaded && (
+                    <span className="text-xs text-blue-400 flex items-center gap-1">
+                      <Brain size={12} /> MediaPipe Ready
+                    </span>
+                  )}
+                </div>
+              )}
+              <div className="mt-4 w-48 h-1 bg-white/10 rounded-full mx-auto overflow-hidden">
+                <div className="w-1/3 h-full bg-[#6C5CE7] animate-[shimmer_1.5s_infinite]" />
+              </div>
+            </div>
+          ) : (
+            <div className="relative w-full h-full">
+              {currentFrame ? (
+                <img
+                  ref={imgRef}
+                  src={`data:image/jpeg;base64,${currentFrame}`}
+                  alt="Live Feed with YOLO + MediaPipe detections"
+                  className={`w-full h-full object-contain bg-black transition-opacity duration-500 ${isPaused ? 'opacity-40 grayscale' : 'opacity-100'}`}
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-white/40 gap-4">
+                  <div className="w-12 h-12 border-4 border-white/20 border-t-[#6C5CE7] rounded-full animate-spin" />
+                  <p className="text-sm">Initializing camera &amp; AI models...</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {isMonitoring && (
+            <div className="absolute top-4 right-4 flex items-center gap-2">
+              <div className="px-3 py-1 bg-white/90 backdrop-blur rounded-full clay-button text-[10px] font-bold flex items-center gap-2 shadow-lg">
+                <span className={`w-1.5 h-1.5 rounded-full ${aiConnected ? 'bg-[#00B894]' : 'bg-red-500'} ${currentFrame ? 'animate-pulse' : ''}`} />
+                {aiConnected ? (currentFrame ? 'LIVE' : 'CONNECTING...') : 'AI OFFLINE'}
+              </div>
+              {headPoseCount > 0 && (
+                <div className="px-3 py-1 bg-blue-50/90 backdrop-blur rounded-full text-[10px] font-bold flex items-center gap-2 shadow-lg text-blue-600">
+                  <Brain size={10} />
+                  {headPoseCount} FACE{headPoseCount > 1 ? 'S' : ''}
+                </div>
+              )}
+            </div>
+          )}
+
+          {isPaused && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="bg-white/20 backdrop-blur-md p-6 rounded-full">
+                <Pause size={48} className="text-white" />
+              </div>
+            </div>
+          )}
+        </ClayCard>
+
+        {isMonitoring && (
+          <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-white/90 backdrop-blur-md p-2 rounded-[24px] clay-card shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <button
+              onClick={() => {
+                setIsPaused(!isPaused);
+                if (!isPaused && pollTimerRef.current) {
+                  clearInterval(pollTimerRef.current);
+                  pollTimerRef.current = null;
+                } else if (isPaused) {
+                  pollTimerRef.current = window.setInterval(() => {
+                    pollFrames(useDirectCamera);
+                  }, 500);
+                }
+              }}
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isPaused ? 'bg-[#6C5CE7] text-white' : 'text-[#636E72] hover:bg-[#F5F0EB]'}`}
+              title={isPaused ? "Resume" : "Pause"}
+            >
+              {isPaused ? <Play size={18} /> : <Pause size={18} />}
+            </button>
+            <div className="w-[1px] h-6 bg-[#E8E2DC]" />
+            <button
+              onClick={handleScreenshot}
+              className="w-10 h-10 rounded-full flex items-center justify-center text-[#636E72] hover:bg-[#F5F0EB] transition-colors" title="Screenshot"
+            >
+              <Download size={18} />
+            </button>
+            <button
+              onClick={toggleFullscreen}
+              className="w-10 h-10 rounded-full flex items-center justify-center text-[#636E72] hover:bg-[#F5F0EB] transition-colors" title="Fullscreen"
+            >
+              <Maximize2 size={18} />
+            </button>
+          </div>
+        )}
+      </div>
+
+      <canvas ref={canvasRef} className="hidden" />
+
+      {isMonitoring && (
+        <ClayCard className="bg-[#6C5CE7]/5 border-[#6C5CE7]/20 flex items-start gap-4">
+          <div className="p-3 bg-[#6C5CE7] rounded-xl clay-button shrink-0">
+            <Shield className="text-white" size={24} />
+          </div>
+          <div>
+            <h3 className="font-bold text-[#6C5CE7] text-sm">AI Active Protection</h3>
+            <p className="text-xs text-[#2D3436]/80 leading-relaxed">
+              {aiConnected
+                ? <>
+                  <span className="font-semibold">YOLO</span> scanning for prohibited items (phones, headphones, books).{' '}
+                  {mediapipeLoaded && (
+                    <><span className="font-semibold">MediaPipe</span> tracking head pose (yaw/pitch/roll) for attention monitoring. </>
+                  )}
+                </>
+                : "AI Server disconnected. Start Python server: cd ai_backend && python src/detector.py"}
+              <span className="font-bold ml-2">Last check: {new Date().toLocaleTimeString()}</span>
+            </p>
+          </div>
+        </ClayCard>
+      )}
+    </div>
+  );
+};

@@ -1,0 +1,82 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Java / Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+release.properties
+.mvn/timing.properties
+*.class
+*.jar
+*.war
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# AI Model files (large)
+*.pt
+*.pth
+*.onnx
+*.tflite
+
+# Environment & secrets
+.env
+.env.local
+.env.*.local
+application-local.properties
+application-dev.properties
+application-prod.properties
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*~
+
+# Captures/Recordings
+uploads/
+captures/
+recordings/
+*.webm
+*.avi

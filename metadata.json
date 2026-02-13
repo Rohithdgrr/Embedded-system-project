@@ -1,0 +1,7 @@
+{
+  "name": "ProctorClay AI",
+  "description": "An AI-powered proctoring dashboard featuring claymorphism design and real-time exam monitoring using Gemini Flash.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
