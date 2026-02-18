@@ -1,4 +1,4 @@
-const AI_SERVER_URL = 'http://localhost:5000';
+const AI_SERVER_URL = import.meta.env.VITE_AI_SERVER_URL || 'http://localhost:5000';
 
 export interface HeadPose {
   yaw: number;

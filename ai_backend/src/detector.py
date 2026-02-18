@@ -27,7 +27,16 @@ import mediapipe as mp
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 
 app = Flask(__name__)
-CORS(app)
+
+# Configure CORS for production - allow requests from Vercel and local development
+cors_origin = os.environ.get('CORS_ORIGIN', '*')
+CORS(app, resources={
+    r"/*": {
+        "origins": cors_origin if cors_origin != '*' else '*',
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"]
+    }
+})
 
 
 class HeadPoseEstimator:
