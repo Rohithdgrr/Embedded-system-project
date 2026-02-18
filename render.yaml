@@ -7,11 +7,15 @@ services:
     buildCommand: |
       pip install -r ai_backend/requirements.txt
     startCommand: |
-      cd ai_backend && gunicorn -w 2 -b 0.0.0.0:$PORT "src.detector:app"
+      cd ai_backend && gunicorn -w 1 --threads 2 --timeout 120 -b 0.0.0.0:$PORT "src.detector:app"
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.8
       - key: FLASK_ENV
         value: production
+      - key: PYTHONUNBUFFERED
+        value: "true"
+      - key: YOLO_VERBOSE
+        value: "false"
       - key: CORS_ORIGIN
         value: https://embedded-system-project.vercel.app/  # CHANGE THIS to your actual Vercel URL
