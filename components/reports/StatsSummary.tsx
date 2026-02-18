@@ -1,8 +1,13 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ClipboardList, AlertTriangle, Smartphone, Headphones, Watch, FileText } from 'lucide-react';
+import { ClipboardList, AlertTriangle, Smartphone, FileText, BookOpen, Laptop } from 'lucide-react';
 import { ClayCard } from '../ClayCard';
+import { ProctorAlert } from '../../types';
+
+interface StatsSummaryProps {
+  alerts?: ProctorAlert[];
+}
 
 interface StatItemProps {
   icon: React.ElementType;
@@ -18,9 +23,10 @@ const StatItem: React.FC<StatItemProps> = ({ icon: Icon, label, value, color, de
       <div className="p-3 rounded-2xl mb-3 transition-transform group-hover:scale-110" style={{ backgroundColor: `${color}15` }}>
         <Icon size={24} style={{ color }} />
       </div>
-      <motion.p 
+      <motion.p
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
+        key={value}
         className="text-3xl font-bold mono mb-1 text-[#2D3436]"
       >
         {value}
@@ -30,14 +36,21 @@ const StatItem: React.FC<StatItemProps> = ({ icon: Icon, label, value, color, de
   </ClayCard>
 );
 
-export const StatsSummary: React.FC = () => {
+export const StatsSummary: React.FC<StatsSummaryProps> = ({ alerts = [] }) => {
+  const phoneCount = alerts.filter(a => a.type === 'PHONE').length;
+  const chitCount = alerts.filter(a => a.type === 'CHIT').length;
+  const textbookCount = alerts.filter(a => a.type === 'TEXTBOOK').length;
+  const notebookCount = alerts.filter(a => a.type === 'NOTEBOOK').length;
+  const deviceCount = alerts.filter(a => a.type === 'DEVICE').length;
+  const totalScore = alerts.reduce((sum, a) => sum + (a.score || 0), 0);
+
   const stats = [
-    { icon: ClipboardList, label: 'Total Sessions', value: 0, color: '#6C5CE7' },
-    { icon: AlertTriangle, label: 'Total Violations', value: 0, color: '#FF6B6B' },
-    { icon: Smartphone, label: 'Phones', value: 0, color: '#6C5CE7' },
-    { icon: Headphones, label: 'Earphones', value: 0, color: '#00B894' },
-    { icon: Watch, label: 'Watches', value: 0, color: '#FDCB6E' },
-    { icon: FileText, label: 'Chits', value: 0, color: '#FFA502' },
+    { icon: ClipboardList, label: 'Total Sessions', value: alerts.length > 0 ? 1 : 0, color: '#6C5CE7' },
+    { icon: AlertTriangle, label: 'Total Violations', value: alerts.length, color: '#FF6B6B' },
+    { icon: Smartphone, label: 'Phones', value: phoneCount, color: '#6C5CE7' },
+    { icon: FileText, label: 'Chits', value: chitCount, color: '#FFA502' },
+    { icon: BookOpen, label: 'Books', value: textbookCount + notebookCount, color: '#00B894' },
+    { icon: Laptop, label: 'Devices', value: deviceCount, color: '#636E72' },
   ];
 
   return (

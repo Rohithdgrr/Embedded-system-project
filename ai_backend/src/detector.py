@@ -153,6 +153,50 @@ class HeadPoseEstimator:
         return frame
 
 
+# ─── COCO class IDs for reference ─────────────────────────────────
+# YOLOv8 uses COCO 80 classes. Key ones for exam proctoring:
+# 0: person, 24: backpack, 25: umbrella, 26: handbag, 27: tie,
+# 28: suitcase, 39: bottle, 41: cup, 56: chair, 57: couch,
+# 58: potted plant, 62: tv, 63: laptop, 64: mouse, 65: remote,
+# 66: keyboard, 67: cell phone, 73: book, 74: clock, 75: vase,
+# 76: scissors, 77: teddy bear
+
+# Mapping from COCO class names to exam violation types
+COCO_TO_EXAM_TYPE = {
+    # Direct mappings (high confidence)
+    'cell phone': 'PHONE',
+    'laptop': 'DEVICE',
+    'remote': 'DEVICE',
+    'keyboard': 'DEVICE',
+    'mouse': 'DEVICE',
+    'tv': 'DEVICE',
+    'book': 'TEXTBOOK',
+    
+    # Contextual mappings (need spatial/size analysis)  
+    'clock': 'WATCH_CANDIDATE',       # Small clock near wrist = watch
+    'handbag': 'EARPHONE_CANDIDATE',  # Small near head = earphone case
+    'tie': 'EARPHONE_CANDIDATE',      # Cord-like near head = earphone wire
+    'scissors': 'CHIT_CANDIDATE',     # Small object near hands
+    'bottle': 'DEVICE',               # Can hide phone/chit
+    'backpack': 'BAG',                # Bags shouldn't be at desk
+}
+
+# Severity scores for each violation type
+VIOLATION_SCORES = {
+    'PHONE': 30,
+    'EARPHONE': 25,
+    'WATCH': 20,
+    'CHIT': 25,
+    'TEXTBOOK': 30,
+    'NOTEBOOK': 25,
+    'DEVICE': 20,
+    'HEAD_TURN': 15,
+    'LEANING': 10,
+    'MULTIPLE_PEOPLE': 20,
+    'NO_PERSON': 15,
+}
+
+
 class DetectionEngine:
     def __init__(self):
         print("Loading YOLOv8 model...")
@@ -186,20 +230,102 @@ class DetectionEngine:
         self.next_track_id = 1
         self.frame_count = 0
 
+        # ALL potentially relevant COCO classes for exam proctoring
         self.detection_classes = [
-            'person', 'cell phone', 'headphones', 'book', 'notebook',
-            'remote', 'keyboard', 'mouse', 'cup', 'wallet', 'tv', 'laptop'
+            'person', 'cell phone', 'book', 'laptop', 'remote',
+            'keyboard', 'mouse', 'tv', 'clock', 'scissors',
+            'handbag', 'tie', 'backpack', 'bottle', 'cup',
+            'umbrella', 'suitcase', 'vase'
         ]
 
         self.class_colors = {
-            'person': (0, 255, 0),
-            'cell phone': (255, 0, 0),
-            'headphones': (255, 255, 0),
-            'book': (0, 165, 255),
-            'notebook': (0, 165, 255),
-            'remote': (128, 0, 128),
-            'default': (255, 255, 255)
+            'PHONE': (0, 0, 255),       # Red
+            'EARPHONE': (255, 0, 255),   # Magenta
+            'WATCH': (0, 215, 255),      # Gold
+            'CHIT': (0, 255, 0),         # Green
+            'TEXTBOOK': (0, 165, 255),   # Orange
+            'NOTEBOOK': (0, 165, 255),   # Orange
+            'DEVICE': (128, 0, 128),     # Purple
+            'person': (0, 255, 0),       # Green
+            'default': (255, 255, 255)   # White
         }
+
+        # Detection history for temporal smoothing (reduces false positives)
+        self.detection_history = defaultdict(lambda: {
+            'count': 0,
+            'last_seen': 0,
+            'confidences': []
+        })
+        self.HISTORY_WINDOW = 5  # Frames to track
+        self.MIN_CONSISTENCY = 2  # Min detections in window to confirm
+
+    def _classify_detection(self, det, persons, frame_h, frame_w):
+        """Classify a COCO detection into an exam-specific violation type.
+        Uses spatial analysis relative to detected persons."""
+        coco_class = det['class']
+        bbox = det['bbox']  # [x, y, w, h]
+        conf = det['confidence']
+        x, y, w, h = bbox
+        
+        # Direct high-confidence mappings
+        if coco_class == 'cell phone':
+            return 'PHONE', conf * 1.1  # Boost confidence
+        
+        if coco_class == 'book':
+            # Large book = textbook, small = notebook/chit
+            area = w * h
+            frame_area = frame_h * frame_w
+            relative_size = area / frame_area if frame_area > 0 else 0
+            
+            if relative_size > 0.03:
+                return 'TEXTBOOK', conf
+            elif relative_size > 0.008:
+                return 'NOTEBOOK', conf * 0.95
+            else:
+                return 'CHIT', conf * 0.85
+        
+        if coco_class in ['laptop', 'keyboard', 'mouse', 'remote', 'tv']:
+            return 'DEVICE', conf
+        
+        if coco_class == 'clock':
+            # Small clock detection = likely a watch (wristwatch)
+            area = w * h
+            frame_area = frame_h * frame_w
+            relative_size = area / frame_area if frame_area > 0 else 0
+            aspect = w / max(h, 1)
+            
+            # Watch characteristics: small, roughly square
+            if relative_size < 0.02 and 0.5 < aspect < 2.0:
+                # Check if near a person's wrist area (lower half of person bbox)
+                is_near_person = False
+                for p in persons:
+                    px, py, pw, ph = p['bbox']
+                    # Wrist area: bottom 40% of person, sides
+                    wrist_y_start = py + int(ph * 0.6)
+                    if y > wrist_y_start and x > px - 30 and x < px + pw + 30:
+                        is_near_person = True
+                        break
+                
+                if is_near_person:
+                    return None, 0  # Skip watch detection (removed)
+                else:
+                    return None, 0  # Skip watch detection (removed)
+            else:
+                return 'DEVICE', conf * 0.6  # Wall clock or similar
+        
+        if coco_class in ['handbag', 'tie']:
+            # Earphone detection removed — skip handbag/tie detections
+            return None, 0
+        
+        if coco_class == 'scissors':
+            # Small object = possibly chit/note
+            return 'CHIT', conf * 0.65
+        
+        if coco_class == 'bottle':
+            # Bottle can hide things, low priority alert
+            return None, 0  # Don't alert on bottles
+        
+        return None, 0
 
     def detect_objects(self, frame):
         if self.yolo_model is None:
@@ -207,13 +333,22 @@ class DetectionEngine:
             return []
 
         try:
-            results = self.yolo_model(frame, verbose=False)[0]
+            # Run YOLO with lower confidence for catching more items
+            results = self.yolo_model(
+                frame, 
+                verbose=False, 
+                conf=0.15,    # Lower threshold to catch more items
+                iou=0.4       # NMS IoU for exam scenarios
+            )[0]
         except Exception as e:
             print(f"YOLO detection error: {e}")
             return []
 
-        detections = []
+        h, w, _ = frame.shape
+        raw_detections = []
+        persons = []
 
+        # First pass: collect all raw COCO detections
         for box in results.boxes:
             class_id = int(box.cls[0])
             class_name = results.names[class_id]
@@ -222,13 +357,57 @@ class DetectionEngine:
                 x1, y1, x2, y2 = map(int, box.xyxy[0])
                 conf = float(box.conf[0])
 
-                detections.append({
+                det = {
                     'class': class_name,
                     'confidence': conf,
                     'bbox': [x1, y1, x2 - x1, y2 - y1]
+                }
+                raw_detections.append(det)
+                
+                if class_name == 'person':
+                    persons.append(det)
+
+        # Second pass: classify non-person detections into exam types
+        exam_detections = []
+        
+        for det in raw_detections:
+            if det['class'] == 'person':
+                exam_detections.append(det)
+                continue
+            
+            exam_type, adjusted_conf = self._classify_detection(det, persons, h, w)
+            
+            if exam_type and adjusted_conf > 0.12:
+                # Apply temporal smoothing
+                det_key = f"{exam_type}_{det['bbox'][0]//50}_{det['bbox'][1]//50}"
+                history = self.detection_history[det_key]
+                history['count'] = min(history['count'] + 1, self.HISTORY_WINDOW)
+                history['last_seen'] = self.frame_count
+                history['confidences'].append(adjusted_conf)
+                if len(history['confidences']) > self.HISTORY_WINDOW:
+                    history['confidences'] = history['confidences'][-self.HISTORY_WINDOW:]
+                
+                # Use smoothed confidence
+                avg_conf = sum(history['confidences']) / len(history['confidences'])
+                final_conf = min(avg_conf * 1.05, 0.99)  # Slight boost for consistency
+                
+                exam_detections.append({
+                    'class': det['class'],
+                    'exam_type': exam_type,
+                    'confidence': final_conf,
+                    'raw_confidence': det['confidence'],
+                    'bbox': det['bbox']
                 })
 
-        return detections
+        # Decay old detection history
+        stale_keys = []
+        for key, hist in self.detection_history.items():
+            if self.frame_count - hist['last_seen'] > self.HISTORY_WINDOW * 2:
+                stale_keys.append(key)
+        for key in stale_keys:
+            del self.detection_history[key]
+
+        return exam_detections
 
     def estimate_head_poses(self, frame):
         """Run MediaPipe face mesh head pose estimation."""
@@ -295,16 +474,25 @@ class DetectionEngine:
     def draw_detections(self, frame, detections, head_poses=None):
         for det in detections:
             x, y, w, h = det['bbox']
-            class_name = det['class']
+            class_name = det.get('exam_type', det['class'])
             conf = det['confidence']
 
             color = self.class_colors.get(class_name, self.class_colors['default'])
 
             cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
 
-            label = f"{class_name}: {conf:.2f}"
-            cv2.putText(frame, label, (x, y - 10),
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+            # Show exam type label instead of COCO class
+            display_name = class_name
+            if det.get('exam_type'):
+                display_name = det['exam_type']
+            
+            label = f"{display_name}: {conf:.2f}"
+            
+            # Background for text
+            (text_w, text_h), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
+            cv2.rectangle(frame, (x, y - text_h - 10), (x + text_w, y), color, -1)
+            cv2.putText(frame, label, (x, y - 5),
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
 
         # Draw head pose overlays
         if head_poses and self.head_pose:
@@ -321,8 +509,8 @@ class DetectionEngine:
 
         person_count = len([d for d in detections if d['class'] == 'person'])
 
-        prohibited_items = [d for d in detections if d['class'] in
-                          ['cell phone', 'headphones', 'book', 'notebook']]
+        # Prohibited items: anything with an exam_type
+        prohibited_items = [d for d in detections if d.get('exam_type')]
 
         result = {
             'frame_number': self.frame_count,
@@ -848,7 +1036,18 @@ def detect_stream():
 if __name__ == '__main__':
     print("="*60)
     print("  AI Detection Server (YOLO + MediaPipe)")
+    print("  Enhanced Exam Proctoring Detection")
     print("="*60)
+    print("Detectable Items:")
+    print("  📱 Phone (cell phone)")
+    print("  🎧 Earphone (spatial analysis near head)")
+    print("  ⌚ Watch (small clock-like objects near wrist)")
+    print("  📝 Chit (small paper/objects)")
+    print("  📖 Textbook (large books)")
+    print("  📓 Notebook (medium books)")
+    print("  💻 Devices (laptop, keyboard, remote, etc.)")
+    print("  🔄 Head Turn (MediaPipe face mesh)")
+    print("")
     print("Endpoints:")
     print("  GET  /health                     - Server health check")
     print("  GET  /cameras                    - List available cameras")

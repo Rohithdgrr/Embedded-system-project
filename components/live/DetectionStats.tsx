@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Users, Smartphone, Headphones, Watch, FileText, BookOpen, Laptop, ClipboardList, CheckCircle2, Brain, Eye, RotateCcw } from 'lucide-react';
+import { Users, Smartphone, FileText, BookOpen, Laptop, ClipboardList, CheckCircle2, Brain, Eye, RotateCcw } from 'lucide-react';
 import { ClayCard } from '../ClayCard';
 import { DetectionStats as IStats } from '../../types';
 
@@ -13,8 +13,6 @@ export const DetectionStats: React.FC<DetectionStatsProps> = ({ stats }) => {
 
   const detections = [
     { icon: Smartphone, label: 'Phone', value: stats.phone, color: '#6C5CE7' },
-    { icon: Headphones, label: 'Earphone', value: stats.earphone, color: '#00B894' },
-    { icon: Watch, label: 'Watch', value: stats.watch, color: '#FDCB6E' },
     { icon: FileText, label: 'Chit', value: stats.chit, color: '#FF6B6B' },
     { icon: BookOpen, label: 'Textbook', value: stats.textbook, color: '#FFA502' },
     { icon: ClipboardList, label: 'Notebook', value: stats.notebook, color: '#6C5CE7' },

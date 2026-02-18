@@ -5,8 +5,8 @@ import { Header } from '../components/Header';
 import { Navigation, TabType } from '../components/Navigation';
 import { LiveMonitorView } from '../views/LiveMonitorView';
 import { UploadView } from '../views/UploadView';
-import { ReportsView } from './views/ReportsView';
-import { ProctorAlert } from '../database/types';
+import { ReportsView } from '../views/ReportsView';
+import { ProctorAlert } from '../types';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('live');

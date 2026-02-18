@@ -7,7 +7,7 @@ import { StatsSummary } from '../../components/reports/StatsSummary';
 import { SimpleCharts } from '../../components/reports/SimpleCharts';
 import { SessionDetailModal } from '../../components/reports/SessionDetailModal';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ExamSession } from '../../database/types';
+import { ExamSession } from '../../types';
 
 export const ReportsView: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');

@@ -118,8 +118,8 @@ The system accepts video input through TWO methods:
   - Evidence extraction from recordings
 
 The AI engine uses YOLOv8 for detecting persons
-and prohibited objects (phones, earphones, smart
-watches, chits, slips, textbooks, notebooks),
+and prohibited objects (phones, chits, slips,
+textbooks, notebooks, electronic devices),
 MediaPipe for head pose and body posture analysis,
 and ByteTrack for persistent multi-person tracking
 enabling individual student monitoring throughout
@@ -141,8 +141,6 @@ Detection operates in THREE PHASES:
 
   PHASE 3: PROHIBITED ITEM DETECTION
   - Mobile phones (in hand, on desk, hidden)
-  - Earphones and earbuds (wired/wireless)
-  - Smart watches
   - Chits and paper slips
   - Textbooks and notebooks
   - Any electronic devices
@@ -161,7 +159,8 @@ and web-based output.
 KEYWORDS: Artificial Intelligence, Computer Vision,
 Embedded Systems, YOLOv8, MediaPipe, Examination
 Monitoring, Malpractice Detection, Web Dashboard,
-Claymorphism, Mobile Camera, Video Processing.
+Claymorphism, Mobile Camera, Video Processing,
+Threshold-Based Alerts, Email Report System.
 ```
 
 ---
@@ -428,36 +427,24 @@ USE CASES:
 ║  │  │ ├── Screen visible under desk    │  │  ║
 ║  │  │ └── In lap area                  │  │  ║
 ║  │  │                                  │  │  ║
-║  │  │ CLASS 2: EARPHONES / EARBUDS     │  │  ║
-║  │  │ ├── Wired earphones              │  │  ║
-║  │  │ ├── Wireless earbuds             │  │  ║
-║  │  │ ├── In ear (visible)             │  │  ║
-║  │  │ ├── In hand                      │  │  ║
-║  │  │ └── On desk                      │  │  ║
-║  │  │                                  │  │  ║
-║  │  │ CLASS 3: SMART WATCH             │  │  ║
-║  │  │ ├── On wrist (screen active)     │  │  ║
-║  │  │ ├── Being looked at              │  │  ║
-║  │  │ └── Interaction detected         │  │  ║
-║  │  │                                  │  │  ║
-║  │  │ CLASS 4: CHITS / PAPER SLIPS     │  │  ║
+║  │  │ CLASS 2: CHITS / PAPER SLIPS     │  │  ║
 ║  │  │ ├── Small paper in hand          │  │  ║
 ║  │  │ ├── Paper being passed           │  │  ║
 ║  │  │ ├── Hidden paper revealed        │  │  ║
 ║  │  │ └── Paper under question paper   │  │  ║
 ║  │  │                                  │  │  ║
-║  │  │ CLASS 5: TEXTBOOK                │  │  ║
+║  │  │ CLASS 3: TEXTBOOK                │  │  ║
 ║  │  │ ├── Open textbook on desk        │  │  ║
 ║  │  │ ├── Book in bag being accessed   │  │  ║
 ║  │  │ ├── Book under desk              │  │  ║
 ║  │  │ └── Book in lap                  │  │  ║
 ║  │  │                                  │  │  ║
-║  │  │ CLASS 6: NOTEBOOK                │  │  ║
+║  │  │ CLASS 4: NOTEBOOK                │  │  ║
 ║  │  │ ├── Extra notebook on desk       │  │  ║
 ║  │  │ ├── Notes being referenced       │  │  ║
 ║  │  │ └── Hidden notebook              │  │  ║
 ║  │  │                                  │  │  ║
-║  │  │ CLASS 7: ELECTRONIC DEVICE       │  │  ║
+║  │  │ CLASS 5: ELECTRONIC DEVICE       │  │  ║
 ║  │  │ ├── Tablet                       │  │  ║
 ║  │  │ ├── Calculator (if not allowed)  │  │  ║
 ║  │  │ ├── Any unidentified device      │  │  ║
@@ -481,13 +468,11 @@ USE CASES:
 ║  │  ┌────────────────────────┬──────────┐ │  ║
 ║  │  │ Violation Type         │ Points   │ │  ║
 ║  │  ├────────────────────────┼──────────┤ │  ║
-║  │  │ Phone detected         │   25     │ │  ║
-║  │  │ Earphone detected      │   30     │ │  ║
-║  │  │ Smart watch active     │   20     │ │  ║
-║  │  │ Chit/slip detected     │   20     │ │  ║
-║  │  │ Textbook detected      │   35     │ │  ║
-║  │  │ Notebook detected      │   30     │ │  ║
-║  │  │ Electronic device      │   25     │ │  ║
+║  │  │ Phone detected         │   30     │ │  ║
+║  │  │ Chit/slip detected     │   25     │ │  ║
+║  │  │ Textbook detected      │   30     │ │  ║
+║  │  │ Notebook detected      │   25     │ │  ║
+║  │  │ Electronic device      │   20     │ │  ║
 ║  │  │ Head turned (sustained)│   10     │ │  ║
 ║  │  │ Looking at neighbor    │    8     │ │  ║
 ║  │  │ Leaning toward other   │   10     │ │  ║
@@ -667,8 +652,8 @@ COLOR PALETTE:
 │  Text Primary: #2D3436  (Dark gray)     │
 │  Text Light:   #636E72  (Medium gray)   │
 │  Border:       #E8E2DC  (Soft border)   │
-│                                          │
-│  ALERT LEVEL COLORS                     │
+│                                            │
+│  ALERT LEVEL COLORS                        │
 │  Green:    #26DE81                       │
 │  Yellow:   #FFC312                       │
 │  Orange:   #F79F1F                       │
@@ -734,8 +719,6 @@ ICONS:
 │  ├── AlertTriangle → Warnings            │
 │  ├── Users → Head count                  │
 │  ├── Smartphone → Phone detection        │
-│  ├── Headphones → Earphone detection     │
-│  ├── Watch → Smart watch detection       │
 │  ├── FileText → Chit/slip detection      │
 │  ├── BookOpen → Textbook detection       │
 │  ├── Notebook → Notebook detection       │
@@ -1003,12 +986,10 @@ LAPTOP LAYOUT:
 │  │  │   labels,     │  │ │  DETECTIONS NOW     ││
 │  │  │   scores)     │  │ │  ┌───────────────┐  ││
 │  │  │               │  │ │  │📱 Phone: 2     │  ││
-│  │  │               │  │ │  │🎧 Earphone: 0  │  ││
-│  │  │  Loading:     │  │ │  │⌚ Watch: 1     │  ││
-│  │  │  Skeleton     │  │ │  │📄 Chit: 0      │  ││
-│  │  │  rectangle    │  │ │  │📕 Textbook: 0  │  ││
-│  │  │  with shimmer │  │ │  │📓 Notebook: 1  │  ││
-│  │  │  until feed   │  │ │  │📳 Device: 0    │  ││
+│  │  │               │  │ │  │📄 Chit: 0      │  ││
+│  │  │  Loading:     │  │ │  │📕 Textbook: 0  │  ││
+│  │  │  Skeleton     │  │ │  │📓 Notebook: 1  │  ││
+│  │  │  rectangle    │  │ │  │📳 Device: 0    │  ││
 │  │  │  connects     │  │ │  └───────────────┘  ││
 │  │  │               │  │ │                     ││
 │  │  └───────────────┘  │ │  PHASE INDICATOR    ││
@@ -1232,12 +1213,11 @@ LAPTOP LAYOUT:
 │  │  │               │  │ │  Violations: 12     ││
 │  │  │  Frame being  │  │ │  ┌───────────────┐  ││
 │  │  │  processed    │  │ │  │📱 Phones: 3    │  ││
-│  │  │  with AI      │  │ │  │🎧 Earphone: 1 │  ││
-│  │  │  overlay      │  │ │  │⌚ Watch: 2    │  ││
-│  │  │               │  │ │  │📄 Chits: 1    │  ││
-│  │  │  (Updates     │  │ │  │📕 Textbook: 0 │  ││
-│  │  │   every few   │  │ │  │📓 Notebook: 2 │  ││
-│  │  │   seconds)    │  │ │  └───────────────┘  ││
+│  │  │  with AI      │  │ │  │📄 Chits: 1    │  ││
+│  │  │  overlay      │  │ │  │📕 Textbook: 0 │  ││
+│  │  │               │  │ │  │� Notebook: 2 │  ││
+│  │  │  (Updates     │  │ │  │� Device: 1   │  ││
+│  │  │   every few   │  │ │  └───────────────┘  ││
 │  │  │               │  │ │                     ││
 │  │  └───────────────┘  │ │  Timeline Markers:  ││
 │  │                     │ │  🔴 14:23 Phone B3  ││
@@ -1263,8 +1243,8 @@ LAPTOP LAYOUT:
 │  │                                             │ │
 │  │  ┌──────────┐ ┌──────────┐ ┌──────────┐    │ │
 │  │  │          │ │          │ │          │    │ │
-│  │  │ 📱 3     │ │ 🎧 1     │ │ ⌚ 2     │    │ │
-│  │  │ Phones   │ │ Earphone │ │ Watches  │    │ │
+│  │  │ 📱 3     │ │ 📄 1     │ │ 📕 2     │    │ │
+│  │  │ Phones   │ │ Chits    │ │ Textbook │    │ │
 │  │  │          │ │          │ │          │    │ │
 │  │  └──────────┘ └──────────┘ └──────────┘    │ │
 │  │                                             │ │
@@ -1427,8 +1407,8 @@ LAPTOP LAYOUT:
 │  │                                             │ │
 │  │  ┌──────────┐ ┌──────────┐ ┌──────────┐    │ │
 │  │  │          │ │          │ │          │    │ │
-│  │  │ 🎧 5     │ │ ⌚ 8     │ │ 📄 16    │    │ │
-│  │  │ Earphone │ │ Watches  │ │ Chits    │    │ │
+│  │  │ 📄 16    │ │ 📕 5     │ │ � 8     │    │ │
+│  │  │ Chits    │ │ Textbook │ │ Notebook │    │ │
 │  │  │          │ │          │ │          │    │ │
 │  │  └──────────┘ └──────────┘ └──────────┘    │ │
 │  │                                             │ │
@@ -1849,41 +1829,28 @@ VIDEO INPUT (from phone or file)
 ║  ├── Different angles and lighting   ║
 ║  └── ~500 labeled images             ║
 ║                                      ║
-║  CLASS 2: earphone                   ║
-║  ├── Wired earphones (cable visible) ║
-║  ├── Wireless earbuds (AirPods-like) ║
-║  ├── In ear, in hand, on desk       ║
-║  ├── Various colors (white, black)   ║
-║  └── ~400 labeled images             ║
-║                                      ║
-║  CLASS 3: smart_watch                ║
-║  ├── Watch on wrist (screen lit)     ║
-║  ├── Student looking at watch        ║
-║  ├── Various watch types             ║
-║  └── ~300 labeled images             ║
-║                                      ║
-║  CLASS 4: chit_slip                  ║
+║  CLASS 2: chit_slip                  ║
 ║  ├── Small paper in hand             ║
 ║  ├── Paper being passed              ║
 ║  ├── Folded paper/chit               ║
 ║  ├── Paper hidden under sheet        ║
 ║  └── ~400 labeled images             ║
 ║                                      ║
-║  CLASS 5: textbook                   ║
+║  CLASS 3: textbook                   ║
 ║  ├── Open textbook on desk           ║
 ║  ├── Book partially visible          ║
 ║  ├── Book in lap                     ║
 ║  ├── Book cover visible              ║
 ║  └── ~400 labeled images             ║
 ║                                      ║
-║  CLASS 6: notebook                   ║
+║  CLASS 4: notebook                   ║
 ║  ├── Extra notebook on desk          ║
 ║  ├── Notebook being referenced       ║
 ║  ├── Spiral notebook visible         ║
 ║  ├── Handwritten notes visible       ║
 ║  └── ~350 labeled images             ║
 ║                                      ║
-║  CLASS 7: electronic_device          ║
+║  CLASS 5: electronic_device          ║
 ║  ├── Tablets                         ║
 ║  ├── Calculators (if prohibited)     ║
 ║  ├── Any unidentified electronics    ║
@@ -1940,9 +1907,6 @@ VIDEO INPUT (from phone or file)
 │  ├── Head down + phone detected      │
 │  │   = PHONE_USAGE (high confidence) │
 │  │                                   │
-│  ├── Hand near ear + earphone det.   │
-│  │   = EARPIECE_USAGE (high conf)    │
-│  │                                   │
 │  ├── Head turn + no object           │
 │  │   = LOOKING_AT_NEIGHBOR (med)     │
 │  │                                   │
@@ -1951,9 +1915,6 @@ VIDEO INPUT (from phone or file)
 │  │                                   │
 │  ├── Head down + textbook/notebook   │
 │  │   = USING_NOTES (high conf)       │
-│  │                                   │
-│  ├── Looking at wrist + watch det.   │
-│  │   = SMARTWATCH_USAGE (high conf)  │
 │  │                                   │
 │  └── Multiple flags + objects        │
 │      = COMBINED_VIOLATION (critical) │
@@ -2449,8 +2410,8 @@ STEP 3: MONITORING (During Exam — Automatic)
 ├── PHASE 1 runs: Counts students, tracks each
 ├── PHASE 2 runs: Monitors head movements,
 │   body posture for each tracked person
-├── PHASE 3 runs: Scans for phones, earphones,
-│   watches, chits, textbooks, notebooks
+├── PHASE 3 runs: Scans for phones, chits,
+│   textbooks, notebooks, electronic devices
 ├── Scoring engine accumulates points
 ├── Dashboard updates in real-time via WebSocket:
 │   ├── Video feed shows AI overlay
@@ -2546,7 +2507,7 @@ OUTPUT 1: LIVE MONITORING DASHBOARD (Page 1)
 ├── Real-time video feed with AI overlay
 │   ├── Bounding boxes around persons
 │   ├── Bounding boxes around detected objects
-│   ├── Labels (phone, earphone, chit, etc.)
+│   ├── Labels (phone, chit, textbook, etc.)
 │   ├── Confidence percentage on each detection
 │   └── Color coding (green=normal, red=alert)
 ├── Live head count with mismatch warning
@@ -2589,8 +2550,6 @@ OUTPUT 5: PDF REPORT (Per Exam Session)
 ├── Total students detected
 ├── Violation summary by category:
 │   ├── Phones detected: X
-│   ├── Earphones detected: X
-│   ├── Smart watches detected: X
 │   ├── Chits/slips detected: X
 │   ├── Textbooks detected: X
 │   ├── Notebooks detected: X
@@ -2780,10 +2739,8 @@ AI PIPELINE (3 Phases):
 ├── Phase 1: Head Count (YOLOv8 + ByteTrack)
 ├── Phase 2: Behavior Analysis (MediaPipe)
 └── Phase 3: Prohibited Item Detection
-    (YOLOv8 Custom — 7 classes)
+    (YOLOv8 Custom — 5 classes)
     ├── Mobile phones
-    ├── Earphones / earbuds
-    ├── Smart watches
     ├── Chits / paper slips
     ├── Textbooks
     ├── Notebooks

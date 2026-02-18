@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Loader2, CheckCircle2, Circle, Smartphone, Headphones, Watch, FileText, BookOpen, ClipboardList, Activity } from 'lucide-react';
+import { Loader2, CheckCircle2, Circle, Smartphone, FileText, BookOpen, ClipboardList, Laptop, Activity } from 'lucide-react';
 import { ClayCard } from '../ClayCard';
 
 interface ProcessingStateProps {
@@ -18,11 +18,10 @@ export const ProcessingState: React.FC<ProcessingStateProps> = ({ progress, file
 
   const detections = [
     { icon: Smartphone, label: 'Phones', value: Math.floor(progress / 15), color: '#6C5CE7' },
-    { icon: Headphones, label: 'Earphone', value: Math.floor(progress / 40), color: '#00B894' },
-    { icon: Watch, label: 'Watch', value: Math.floor(progress / 25), color: '#FDCB6E' },
     { icon: FileText, label: 'Chits', value: Math.floor(progress / 35), color: '#FF6B6B' },
     { icon: BookOpen, label: 'Textbook', value: 0, color: '#FFA502' },
     { icon: ClipboardList, label: 'Notebook', value: Math.floor(progress / 20), color: '#6C5CE7' },
+    { icon: Laptop, label: 'Device', value: Math.floor(progress / 40), color: '#636E72' },
   ];
 
   return (
@@ -58,22 +57,22 @@ export const ProcessingState: React.FC<ProcessingStateProps> = ({ progress, file
             </div>
           </div>
           <div className="w-full bg-[#F5F0EB] h-6 rounded-full overflow-hidden clay-inset p-1">
-            <motion.div 
+            <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${progress}%` }}
               className="h-full bg-gradient-to-r from-[#6C5CE7] to-[#a29bfe] rounded-full"
             />
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
             {phases.map((p) => {
               const isDone = progress > p.threshold;
               const isActive = progress <= p.threshold && (phases[phases.indexOf(p) - 1]?.threshold || 0) <= progress;
               return (
                 <div key={p.id} className="flex items-center gap-2">
-                  {isDone ? <CheckCircle2 size={16} className="text-[#00B894]" /> : 
-                   isActive ? <Loader2 size={16} className="text-[#6C5CE7] animate-spin" /> : 
-                   <Circle size={16} className="text-[#E8E2DC]" />}
+                  {isDone ? <CheckCircle2 size={16} className="text-[#00B894]" /> :
+                    isActive ? <Loader2 size={16} className="text-[#6C5CE7] animate-spin" /> :
+                      <Circle size={16} className="text-[#E8E2DC]" />}
                   <span className={`text-xs font-bold uppercase tracking-tight ${isDone ? 'text-[#00B894]' : isActive ? 'text-[#6C5CE7]' : 'text-[#636E72]'}`}>
                     {p.label}
                   </span>
@@ -92,17 +91,17 @@ export const ProcessingState: React.FC<ProcessingStateProps> = ({ progress, file
           </div>
           <div className="flex-1 aspect-video relative group">
             <div className="absolute inset-0 skeleton-shimmer bg-[#F5F0EB]" />
-            <img 
-              src={`https://picsum.photos/seed/proctoring${Math.floor(progress/5)}/1280/720`} 
+            <img
+              src={`https://picsum.photos/seed/proctoring${Math.floor(progress / 5)}/1280/720`}
               className="w-full h-full object-cover relative z-10 transition-opacity duration-1000"
               alt="Processing frame"
             />
             <div className="absolute inset-0 z-20 pointer-events-none p-4">
               <div className="w-16 h-16 border-2 border-[#00B894] rounded-lg absolute top-[20%] left-[30%] shadow-[0_0_10px_rgba(0,184,148,0.5)]">
-                 <span className="absolute -top-5 left-0 bg-[#00B894] text-white text-[8px] px-1 font-bold">ST_9482</span>
+                <span className="absolute -top-5 left-0 bg-[#00B894] text-white text-[8px] px-1 font-bold">ST_9482</span>
               </div>
               <div className="w-10 h-10 border-2 border-[#FF6B6B] rounded-lg absolute bottom-[20%] right-[40%] shadow-[0_0_10px_rgba(255,107,107,0.5)]">
-                 <span className="absolute -top-5 left-0 bg-[#FF6B6B] text-white text-[8px] px-1 font-bold">PHONE</span>
+                <span className="absolute -top-5 left-0 bg-[#FF6B6B] text-white text-[8px] px-1 font-bold">PHONE</span>
               </div>
             </div>
           </div>
@@ -133,7 +132,7 @@ export const ProcessingState: React.FC<ProcessingStateProps> = ({ progress, file
               ))}
             </div>
           </div>
-          
+
           <div className="mt-8 pt-6 border-t border-[#E8E2DC]">
             <h5 className="text-[10px] font-bold text-[#636E72] uppercase tracking-widest mb-4">Timeline Markers</h5>
             <div className="space-y-2 max-h-32 overflow-y-auto pr-2 custom-scrollbar">
@@ -142,7 +141,7 @@ export const ProcessingState: React.FC<ProcessingStateProps> = ({ progress, file
                 <span className="font-bold">0:24:12</span>
               </div>
               <div className="flex items-center justify-between text-[10px] mono p-2 bg-[#FFA502]/5 rounded-lg border border-[#FFA502]/10">
-                <span className="text-[#FFA502]">🟠 14:35 Watch detected at D2</span>
+                <span className="text-[#FFA502]">🟠 14:35 Chit detected at D2</span>
                 <span className="font-bold">0:36:45</span>
               </div>
               <div className="flex items-center justify-between text-[10px] mono p-2 bg-[#FDCB6E]/5 rounded-lg border border-[#FDCB6E]/10">

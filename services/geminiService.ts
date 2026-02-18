@@ -4,7 +4,7 @@ import { AnalysisResult } from "../types";
 
 export const analyzeProctorFrame = async (base64Image: string): Promise<AnalysisResult> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  
+
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
     contents: {
@@ -47,7 +47,7 @@ export const analyzeProctorFrame = async (base64Image: string): Promise<Analysis
             items: {
               type: Type.OBJECT,
               properties: {
-                type: { type: Type.STRING, description: "One of: PHONE, EARPHONE, WATCH, CHIT, TEXTBOOK, NOTEBOOK, DEVICE, HEAD_TURN, LEANING, MULTIPLE_PEOPLE, NO_PERSON" },
+                type: { type: Type.STRING, description: "One of: PHONE, CHIT, TEXTBOOK, NOTEBOOK, DEVICE, HEAD_TURN, LEANING, MULTIPLE_PEOPLE, NO_PERSON" },
                 seat: { type: Type.STRING, description: "The seat ID, e.g., B3, D5" },
                 level: { type: Type.STRING, description: "STABLE, LOW, MEDIUM, HIGH, CRITICAL" },
                 description: { type: Type.STRING },

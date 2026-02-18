@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Calendar, Clock, Users, AlertTriangle, Download, FileText, Smartphone, Headphones, Watch, Eye } from 'lucide-react';
+import { X, Calendar, Clock, Users, AlertTriangle, Download, FileText, Smartphone, BookOpen, Laptop, Eye } from 'lucide-react';
 import { ClayButton } from '../ClayButton';
 
 interface SessionDetailModalProps {
@@ -20,7 +20,7 @@ export const SessionDetailModal: React.FC<SessionDetailModalProps> = ({ session,
           onClick={onClose}
           className="absolute inset-0 bg-[#2D3436]/40 backdrop-blur-sm"
         />
-        
+
         <motion.div
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -37,7 +37,7 @@ export const SessionDetailModal: React.FC<SessionDetailModalProps> = ({ session,
                 <span className="flex items-center gap-1.5 text-[#FF6B6B]"><AlertTriangle size={14} /> {session.alerts} Alerts</span>
               </div>
             </div>
-            <button 
+            <button
               onClick={onClose}
               className="w-10 h-10 rounded-full bg-white clay-button flex items-center justify-center text-[#636E72] hover:text-[#FF6B6B] transition-colors"
             >
@@ -72,11 +72,11 @@ export const SessionDetailModal: React.FC<SessionDetailModalProps> = ({ session,
                 {[
                   { type: 'Phone', seat: 'B3', time: '14:23', img: 'https://picsum.photos/seed/ev1/200' },
                   { type: 'Chit', seat: 'D5', time: '14:35', img: 'https://picsum.photos/seed/ev2/200' },
-                  { type: 'Watch', seat: 'A2', time: '15:02', img: 'https://picsum.photos/seed/ev3/200' },
+                  { type: 'Textbook', seat: 'A2', time: '15:02', img: 'https://picsum.photos/seed/ev3/200' },
                   { type: 'Phone', seat: 'C1', time: '15:18', img: 'https://picsum.photos/seed/ev4/200' },
                 ].map((ev, i) => (
-                  <motion.div 
-                    key={i} 
+                  <motion.div
+                    key={i}
                     whileHover={{ scale: 1.05 }}
                     className="clay-card p-2 bg-white cursor-pointer group"
                   >
@@ -115,7 +115,7 @@ export const SessionDetailModal: React.FC<SessionDetailModalProps> = ({ session,
                     {[
                       { rank: 1, seat: 'B3', score: 78, items: [<Smartphone size={14} className="text-[#6C5CE7]" />, <Smartphone size={14} className="text-[#6C5CE7]" />] },
                       { rank: 2, seat: 'D5', score: 52, items: [<FileText size={14} className="text-[#FFA502]" />] },
-                      { rank: 3, seat: 'A2', score: 45, items: [<Watch size={14} className="text-[#FDCB6E]" />] },
+                      { rank: 3, seat: 'A2', score: 45, items: [<BookOpen size={14} className="text-[#FFA502]" />] },
                     ].map((row) => (
                       <tr key={row.rank} className="hover:bg-[#F5F0EB]/20 transition-colors">
                         <td className="px-6 py-3 text-sm mono font-bold text-[#636E72]">{row.rank}</td>

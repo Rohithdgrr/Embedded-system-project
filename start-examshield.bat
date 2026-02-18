@@ -1,50 +1,67 @@
 @echo off
-echo ==============================================
-echo   ExamShield AI - Starting All Services
-echo ==============================================
+title ExamShield AI - Quick Start
+color 0A
+
 echo.
-echo This will start 3 services:
-echo   1. Spring Boot Backend (Port 8080)
-echo   2. Python AI Server (Port 5000)
-echo   3. Vite Frontend (Port 5173)
+echo  ============================================
+echo    ExamShield AI - Quick Start
+echo  ============================================
 echo.
-echo Press any key to start...
-pause >nul
+echo  Starting all 3 services with health checks...
 echo.
 
-:: Start Backend
-echo [1/3] Starting Spring Boot Backend...
-start "Backend - Port 8080" cmd /k "cd /d %~dp0backend && call mvn spring-boot:run -DskipTests"
-echo Backend starting... (Window: Backend - Port 8080)
+:: ── 1. Backend ───────────────────────────────────────
+echo  [1/3] Starting Spring Boot Backend (Port 8080)...
+start "Backend - Port 8080" cmd /k "cd /d %~dp0backend && mvn clean spring-boot:run -DskipTests"
+echo        Started in new window.
 echo.
 
-:: Wait a bit
-ping 127.0.0.1 -n 3 >nul
+:: Wait for backend to initialize
+echo        Waiting for backend to initialize...
+ping 127.0.0.1 -n 5 >nul
 
-:: Start AI Server
-echo [2/3] Starting Python AI Server...
-start "AI Server - Port 5000" cmd /k "cd /d %~dp0ai_backend && python src/detector.py"
-echo AI Server starting... (Window: AI Server - Port 5000)
+:: ── 2. AI Server ─────────────────────────────────────
+echo  [2/3] Starting Python AI Server (Port 5000)...
+cd /d "%~dp0ai_backend"
+if not exist "venv" (
+    echo        Creating virtual environment...
+    python -m venv venv
+    echo        Installing dependencies...
+    call venv\Scripts\activate.bat
+    pip install -r requirements.txt --quiet
+) else (
+    call venv\Scripts\activate.bat
+)
+start "AI Server - Port 5000" cmd /k "cd /d %~dp0ai_backend && call venv\Scripts\activate.bat && python src\detector.py"
+cd /d "%~dp0"
+echo        Started in new window.
 echo.
 
-:: Wait a bit
-ping 127.0.0.1 -n 3 >nul
+:: Wait for AI server
+echo        Waiting for AI server to initialize...
+ping 127.0.0.1 -n 4 >nul
 
-:: Start Frontend
-echo [3/3] Starting Vite Frontend...
+:: ── 3. Frontend ──────────────────────────────────────
+echo  [3/3] Starting Vite Frontend (Port 5173)...
 start "Frontend - Port 5173" cmd /k "cd /d %~dp0 && npm run dev"
-echo Frontend starting... (Window: Frontend - Port 5173)
+echo        Started in new window.
 echo.
 
-echo ==============================================
-echo   All services started!
-echo ==============================================
+:: ── Done ─────────────────────────────────────────────
+echo  ============================================
+echo    All services launched!
+echo  ============================================
 echo.
-echo Services will be available at:
-echo   Frontend:  http://localhost:5173
-echo   Backend:   http://localhost:8080
-echo   AI Server: http://localhost:5000
+echo  URLs:
+echo    Frontend:    http://localhost:5173
+echo    Backend:     http://localhost:8080
+echo    AI Server:   http://localhost:5000
+echo    AI Health:   http://localhost:5000/health
 echo.
-echo Close the individual windows to stop each service.
+echo  Login Credentials:
+echo    Admin:        admin / admin
+echo    Invigilator:  invigilator / invigi123
+echo.
+echo  Close the individual windows to stop services.
 echo.
 pause

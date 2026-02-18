@@ -1,104 +1,80 @@
-# ExamShield AI - Run All Services
+@echo off
+title ExamShield AI - Run All
+color 0E
 
-echo "=============================================="
-echo "  ExamShield AI - Starting All Services"
-echo "=============================================="
+echo.
+echo  ============================================
+echo    ExamShield AI - Run All Services
+echo  ============================================
+echo.
 
-# Check if Java is installed
-if ! command -v java &> /dev/null; then
-    echo "Error: Java not found. Please install Java 17+"
-    exit 1
-fi
+:: Check prerequisites
+where java >nul 2>&1
+if %ERRORLEVEL% neq 0 (
+    echo  [ERROR] Java not found. Please install Java 17+
+    pause
+    exit /b 1
+)
 
-# Check if Python is installed
-if ! command -v python3 &> /dev/null; then
-    echo "Error: Python not found. Please install Python 3.9+"
-    exit 1
-fi
+where python >nul 2>&1
+if %ERRORLEVEL% neq 0 (
+    echo  [ERROR] Python not found. Please install Python 3.9+
+    pause
+    exit /b 1
+)
 
-# Function to check if port is in use
-check_port() {
-    if command -v lsof &> /dev/null; then
-        lsof -i:$1 &> /dev/null
-    elif command -v netstat &> /dev/null; then
-        netstat -an | grep $1 &> /dev/null
-    else
-        # Default to assuming port is free
-        return 1
-    fi
-}
+where node >nul 2>&1
+if %ERRORLEVEL% neq 0 (
+    echo  [ERROR] Node.js not found. Please install Node.js 18+
+    pause
+    exit /b 1
+)
 
-# Start Backend (Spring Boot)
-start_backend() {
-    echo ""
-    echo "[1/3] Starting Spring Boot Backend on port 8080..."
-    
-    cd backend
-    
-    if [ -f "mvnw" ]; then
-        ./mvnw spring-boot:run -DskipTests &
-    else
-        mvn spring-boot:run -DskipTests &
-    fi
-    
-    cd ..
-    echo "Backend starting in background..."
-}
+echo  Prerequisites OK: Java, Python, Node.js found.
+echo.
 
-# Start AI Detection Server (Python)
-start_ai_server() {
-    echo ""
-    echo "[2/3] Starting AI Detection Server on port 5000..."
-    
-    cd ai_backend
-    
-    # Install dependencies if needed
-    if [ ! -d "venv" ]; then
-        echo "Creating Python virtual environment..."
-        python3 -m venv venv
-    fi
-    
-    source venv/bin/activate
-    pip install -r requirements.txt 2>/dev/null
-    
-    python3 src/detector.py &
-    
-    cd ..
-    echo "AI Server starting in background..."
-}
+:: ── 1. Backend ───────────────────────────────────────
+echo  [1/3] Starting Spring Boot Backend (Port 8080)...
+start "ExamShield Backend" cmd /k "cd /d %~dp0backend && mvn clean spring-boot:run -DskipTests"
+ping 127.0.0.1 -n 5 >nul
 
-# Start Frontend (Vite)
-start_frontend() {
-    echo ""
-    echo "[3/3] Starting Frontend on port 5173..."
-    
-    npm run dev &
-    
-    echo "Frontend starting in background..."
-}
+:: ── 2. AI Server ─────────────────────────────────────
+echo  [2/3] Starting Python AI Server (Port 5000)...
+cd /d "%~dp0ai_backend"
+if not exist "venv" (
+    echo        Setting up Python venv...
+    python -m venv venv
+    call venv\Scripts\activate.bat
+    pip install -r requirements.txt
+) 
+start "ExamShield AI" cmd /k "cd /d %~dp0ai_backend && call venv\Scripts\activate.bat && python src\detector.py"
+cd /d "%~dp0"
+ping 127.0.0.1 -n 4 >nul
 
-# Main
-echo ""
-echo "Starting services..."
-echo ""
+:: ── 3. Frontend ──────────────────────────────────────
+echo  [3/3] Starting Vite Frontend (Port 5173)...
+start "ExamShield Frontend" cmd /k "cd /d %~dp0 && npm run dev"
 
-# Start all services
-start_backend
-start_ai_server  
-start_frontend
-
-echo ""
-echo "=============================================="
-echo "  All services started!"
-echo "=============================================="
-echo ""
-echo "Services:"
-echo "  - Frontend:    http://localhost:5173"
-echo "  - Backend:     http://localhost:8080"
-echo "  - AI Server:   http://localhost:5000"
-echo ""
-echo "Press Ctrl+C to stop all services"
-echo ""
-
-# Wait for all background processes
-wait
+:: ── Summary ──────────────────────────────────────────
+echo.
+echo  ============================================
+echo    All services started!
+echo  ============================================
+echo.
+echo  Access Points:
+echo    Frontend:    http://localhost:5173
+echo    Backend API: http://localhost:8080
+echo    AI Server:   http://localhost:5000
+echo    AI Health:   http://localhost:5000/health
+echo.
+echo  Login:
+echo    Admin:        admin / admin
+echo    Invigilator:  invigilator / invigi123
+echo.
+echo  AI Detection Classes:
+echo    Phone, Chit, Textbook, Notebook, Device
+echo.
+echo  Notification Threshold: 50 points
+echo.
+echo  Press any key to close this launcher...
+pause >nul

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle2, Download, FileBarChart, Users, AlertTriangle, Smartphone, Headphones, Watch, FileText, BookOpen, ClipboardList, Eye } from 'lucide-react';
+import { CheckCircle2, Download, FileBarChart, Users, AlertTriangle, Smartphone, FileText, BookOpen, ClipboardList, Laptop, Eye } from 'lucide-react';
 import { ClayCard } from '../ClayCard';
 import { ClayButton } from '../ClayButton';
 
@@ -14,11 +14,10 @@ export const ResultsState: React.FC = () => {
 
   const details = [
     { icon: Smartphone, label: 'Phones', value: 3 },
-    { icon: Headphones, label: 'Earphone', value: 1 },
-    { icon: Watch, label: 'Watches', value: 2 },
     { icon: FileText, label: 'Chits', value: 1 },
     { icon: BookOpen, label: 'Textbook', value: 0 },
     { icon: ClipboardList, label: 'Notebook', value: 2 },
+    { icon: Laptop, label: 'Device', value: 1 },
   ];
 
   return (
@@ -36,10 +35,10 @@ export const ResultsState: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {summaries.map((s, i) => (
-            <motion.div 
-              key={i} 
-              initial={{ scale: 0.9, opacity: 0 }} 
-              animate={{ scale: 1, opacity: 1 }} 
+            <motion.div
+              key={i}
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: i * 0.1 }}
               whileHover={{ y: -5 }}
               className="clay-inset p-6 text-center group cursor-default"
@@ -93,7 +92,7 @@ export const ResultsState: React.FC = () => {
             <tbody className="divide-y divide-[#E8E2DC]">
               {[
                 { rank: 1, seat: 'B3', score: 78, violation: 'Phone Usage' },
-                { rank: 2, seat: 'D2', score: 65, violation: 'Smart Watch' },
+                { rank: 2, seat: 'D2', score: 65, violation: 'Chit Usage' },
                 { rank: 3, seat: 'F4', score: 52, violation: 'Notebook' },
                 { rank: 4, seat: 'A6', score: 48, violation: 'Behavioral' },
                 { rank: 5, seat: 'C1', score: 34, violation: 'Phone Usage' },
@@ -103,8 +102,8 @@ export const ResultsState: React.FC = () => {
                   <td className="px-6 py-4 text-sm font-bold">{row.seat}</td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                       <span className={`w-2 h-2 rounded-full ${row.score > 70 ? 'bg-[#FF6B6B]' : row.score > 50 ? 'bg-[#FFA502]' : 'bg-[#FDCB6E]'}`} />
-                       <span className="text-sm mono font-bold">{row.score}</span>
+                      <span className={`w-2 h-2 rounded-full ${row.score > 70 ? 'bg-[#FF6B6B]' : row.score > 50 ? 'bg-[#FFA502]' : 'bg-[#FDCB6E]'}`} />
+                      <span className="text-sm mono font-bold">{row.score}</span>
                     </div>
                   </td>
                   <td className="px-6 py-4">

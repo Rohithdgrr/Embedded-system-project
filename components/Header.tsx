@@ -1,15 +1,23 @@
-
 import React from 'react';
-import { ShieldCheck, User, Settings, Bell } from 'lucide-react';
+import { ShieldCheck, User, Settings, LogOut } from 'lucide-react';
 import { ClayButton } from './ClayButton';
 import { Navigation, TabType } from './Navigation';
+
+interface AuthUser {
+  username: string;
+  role: 'admin' | 'invigilator';
+}
 
 interface HeaderProps {
   activeTab: TabType;
   setActiveTab: (tab: TabType) => void;
+  user: AuthUser;
+  onLogout: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
+export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, user, onLogout }) => {
+  const displayName = user.role === 'admin' ? 'Administrator' : 'Invigilator';
+  const roleColor = user.role === 'admin' ? '#00B894' : '#FF6B6B';
   return (
     <header className="flex items-center justify-between px-4 lg:px-8 py-6 mb-4 lg:mb-8 sticky top-0 z-40 bg-[#F5F0EB]/80 backdrop-blur-md">
       <div className="flex items-center gap-3">
@@ -29,17 +37,17 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
       <div className="flex items-center gap-2 lg:gap-4">
         <div className="hidden md:flex items-center gap-2 mr-2">
           <div className="text-right">
-            <p className="text-sm font-bold text-[#2D3436]">Dr. Sarah Wilson</p>
-            <p className="text-[10px] font-semibold text-[#00B894] uppercase tracking-wider">Administrator</p>
+            <p className="text-sm font-bold text-[#2D3436]">{user.username}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: roleColor }}>{displayName}</p>
           </div>
-          <div className="w-10 h-10 bg-white rounded-full clay-button overflow-hidden border-2 border-[#E8E2DC]">
-            <img src="https://picsum.photos/seed/sarah/100" alt="Avatar" className="w-full h-full object-cover" />
+          <div className="w-10 h-10 bg-white rounded-full clay-button overflow-hidden border-2 border-[#E8E2DC] flex items-center justify-center">
+            <User size={20} className="text-[#636E72]" />
           </div>
         </div>
         
         <div className="flex gap-1.5 lg:gap-2">
-          <ClayButton variant="ghost" className="p-2.5 rounded-xl">
-            <Bell size={20} className="text-[#636E72]" />
+          <ClayButton variant="ghost" className="p-2.5 rounded-xl" onClick={onLogout} title="Logout">
+            <LogOut size={20} className="text-[#636E72]" />
           </ClayButton>
           <div className="hidden lg:block">
             <ClayButton variant="ghost" className="p-2.5 rounded-xl">

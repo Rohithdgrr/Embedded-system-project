@@ -1,9 +1,9 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Monitor, UploadCloud, BarChart3 } from 'lucide-react';
+import { Monitor, BarChart3 } from 'lucide-react';
 
-export type TabType = 'live' | 'upload' | 'reports';
+export type TabType = 'live' | 'reports';
 
 interface NavigationProps {
   activeTab: TabType;
@@ -12,7 +12,6 @@ interface NavigationProps {
 
 const navItems = [
   { id: 'live' as TabType, label: 'Live Monitor', icon: Monitor },
-  { id: 'upload' as TabType, label: 'Upload & Analyze', icon: UploadCloud },
   { id: 'reports' as TabType, label: 'Reports & History', icon: BarChart3 },
 ];
 

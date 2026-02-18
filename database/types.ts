@@ -7,17 +7,15 @@ export enum AlertLevel {
   CRITICAL = 'CRITICAL'
 }
 
-export type DetectionType = 
-  | 'PHONE' 
-  | 'EARPHONE' 
-  | 'WATCH' 
-  | 'CHIT' 
-  | 'TEXTBOOK' 
-  | 'NOTEBOOK' 
-  | 'DEVICE' 
-  | 'HEAD_TURN' 
-  | 'LEANING' 
-  | 'MULTIPLE_PEOPLE' 
+export type DetectionType =
+  | 'PHONE'
+  | 'CHIT'
+  | 'TEXTBOOK'
+  | 'NOTEBOOK'
+  | 'DEVICE'
+  | 'HEAD_TURN'
+  | 'LEANING'
+  | 'MULTIPLE_PEOPLE'
   | 'NO_PERSON';
 
 export interface ProctorAlert {
@@ -34,8 +32,6 @@ export interface ProctorAlert {
 
 export interface DetectionStats {
   phone: number;
-  earphone: number;
-  watch: number;
   chit: number;
   textbook: number;
   notebook: number;
@@ -59,9 +55,10 @@ export interface ExamSession {
   students: number;
   detections: {
     phone: number;
-    earphone: number;
-    watch: number;
     chit: number;
+    textbook: number;
+    notebook: number;
+    device: number;
     [key: string]: number;
   };
 }

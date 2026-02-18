@@ -15,13 +15,17 @@ export interface AIDetection {
   timestamp: number;
   detections: Array<{
     class: string;
+    exam_type?: string;
     confidence: number;
+    raw_confidence?: number;
     bbox: number[];
   }>;
   person_count: number;
   prohibited_items: Array<{
     class: string;
+    exam_type?: string;
     confidence: number;
+    raw_confidence?: number;
     bbox: number[];
   }>;
   behaviors: Array<{
@@ -49,6 +53,9 @@ export interface CameraDevice {
   name: string;
   resolution: string;
 }
+
+// Violation point threshold — email is sent once total points exceed this
+export const VIOLATION_EMAIL_THRESHOLD = 50;
 
 export const aiService = {
   async checkHealth(): Promise<boolean> {
@@ -181,40 +188,58 @@ export const aiService = {
       score: number;
     }> = [];
 
+    const examTypeToScore: Record<string, number> = {
+      'PHONE': 30,
+      'CHIT': 25,
+      'TEXTBOOK': 30,
+      'NOTEBOOK': 25,
+      'DEVICE': 20,
+    };
+
+    // Fallback: old COCO class name -> type mapping
     const classToType: Record<string, string> = {
       'cell phone': 'PHONE',
-      'headphones': 'EARPHONE',
       'book': 'TEXTBOOK',
       'notebook': 'NOTEBOOK',
       'remote': 'DEVICE',
       'laptop': 'DEVICE',
-      'tv': 'DEVICE'
+      'tv': 'DEVICE',
+      'scissors': 'CHIT',
     };
 
-    const classToScore: Record<string, number> = {
-      'cell phone': 25,
-      'headphones': 30,
-      'book': 35,
-      'notebook': 30,
-      'remote': 25,
-      'laptop': 25,
-      'tv': 20
+    // Friendly labels for each exam type
+    const typeLabels: Record<string, string> = {
+      'PHONE': 'Mobile Phone',
+      'CHIT': 'Chit/Paper Note',
+      'TEXTBOOK': 'Textbook',
+      'NOTEBOOK': 'Notebook',
+      'DEVICE': 'Electronic Device',
     };
+
+    // Skip earphone & watch detections entirely
+    const SKIP_TYPES = new Set(['EARPHONE', 'WATCH', 'EARPHONE_CANDIDATE', 'WATCH_CANDIDATE']);
 
     let seatCounter = 65;
     for (const item of result.prohibited_items) {
-      const type = classToType[item.class] || 'DEVICE';
-      const score = classToScore[item.class] || 15;
-      const level = score >= 30 ? 'HIGH' : score >= 15 ? 'MEDIUM' : 'LOW';
+      const type = item.exam_type || classToType[item.class] || 'DEVICE';
 
-      alerts.push({
-        type,
-        seat: String.fromCharCode(seatCounter++) + '1',
-        level,
-        description: `${item.class} detected with ${(item.confidence * 100).toFixed(0)}% confidence`,
-        confidence: item.confidence,
-        score
-      });
+      // Skip earphone / watch
+      if (SKIP_TYPES.has(type)) continue;
+
+      const score = examTypeToScore[type] || 15;
+      const level = score >= 30 ? 'HIGH' : score >= 20 ? 'MEDIUM' : 'LOW';
+      const label = typeLabels[type] || item.class;
+
+      if (item.confidence >= 0.20) {
+        alerts.push({
+          type,
+          seat: String.fromCharCode(seatCounter++) + '1',
+          level,
+          description: `${label} detected with ${(item.confidence * 100).toFixed(0)}% confidence`,
+          confidence: item.confidence,
+          score
+        });
+      }
     }
 
     for (const behavior of result.behaviors) {
@@ -264,7 +289,16 @@ export const aiService = {
     let score = 100;
 
     for (const item of result.prohibited_items) {
-      score -= 15;
+      const examType = item.exam_type || 'DEVICE';
+      if (examType === 'EARPHONE' || examType === 'WATCH') continue;
+      const deductions: Record<string, number> = {
+        'PHONE': 20,
+        'CHIT': 18,
+        'TEXTBOOK': 20,
+        'NOTEBOOK': 15,
+        'DEVICE': 12,
+      };
+      score -= (deductions[examType] || 10);
     }
 
     for (const behavior of result.behaviors) {
@@ -284,22 +318,46 @@ export const aiService = {
   getDetectionStats(result: AIDetection) {
     const stats = {
       phone: 0,
-      earphone: 0,
-      watch: 0,
       chit: 0,
       textbook: 0,
       notebook: 0,
       device: 0,
+      headTurn: 0,
+      leaning: 0,
+      multiplePeople: 0,
       detectedCount: result.person_count
     };
 
     for (const item of result.prohibited_items) {
-      switch (item.class) {
-        case 'cell phone': stats.phone++; break;
-        case 'headphones': stats.earphone++; break;
-        case 'book': stats.textbook++; break;
-        case 'notebook': stats.notebook++; break;
-        default: stats.device++; break;
+      const examType = item.exam_type;
+
+      if (examType) {
+        switch (examType) {
+          case 'PHONE': stats.phone++; break;
+          case 'CHIT': stats.chit++; break;
+          case 'TEXTBOOK': stats.textbook++; break;
+          case 'NOTEBOOK': stats.notebook++; break;
+          case 'DEVICE': stats.device++; break;
+          // EARPHONE & WATCH are intentionally skipped
+          default: stats.device++; break;
+        }
+      } else {
+        switch (item.class) {
+          case 'cell phone': stats.phone++; break;
+          case 'book': stats.textbook++; break;
+          case 'notebook': stats.notebook++; break;
+          default: stats.device++; break;
+        }
+      }
+    }
+
+    // Count behavioral detections
+    for (const behavior of result.behaviors) {
+      switch (behavior.type) {
+        case 'HEAD_TURN': stats.headTurn++; break;
+        case 'LOOKING_DOWN': stats.leaning++; break;
+        case 'LOOKING_AWAY': stats.headTurn++; break;
+        case 'PROXIMITY_ALERT': stats.multiplePeople++; break;
       }
     }
 

@@ -37,6 +37,10 @@ export const LiveMonitoring: React.FC<LiveMonitoringProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const [isRecording, setIsRecording] = useState(false);
   const pollTimerRef = useRef<number | null>(null);
+  
+  // Track captured violations to prevent duplicate screenshots (type + seat combo)
+  const capturedViolationsRef = useRef<Map<string, number>>(new Map());
+  const VIOLATION_COOLDOWN_MS = 10000; // 10 seconds cooldown per violation type per seat
 
   const checkAIConnection = useCallback(async () => {
     try {
@@ -107,7 +111,7 @@ export const LiveMonitoring: React.FC<LiveMonitoringProps> = ({
         setCurrentFrame(frame);
       }
 
-      if (result) {
+      if (result && frame) {
         const integrityScore = aiService.calculateIntegrityScore(result);
         updateIntegrityScore(integrityScore);
 
@@ -119,11 +123,23 @@ export const LiveMonitoring: React.FC<LiveMonitoringProps> = ({
         }
 
         const alerts = aiService.convertDetectionsToAlerts(result);
+        const now = Date.now();
+        
         alerts.forEach(alertData => {
+          const violationKey = `${alertData.type}-${alertData.seat}`;
+          const lastCaptured = capturedViolationsRef.current.get(violationKey);
+          
+          let alertScreenshot = undefined;
+          if (!lastCaptured || (now - lastCaptured) > VIOLATION_COOLDOWN_MS) {
+            alertScreenshot = frame; // Use fresh frame from API
+            capturedViolationsRef.current.set(violationKey, now);
+          }
+          
           onNewAlert({
             ...alertData,
             id: crypto.randomUUID(),
-            timestamp: new Date()
+            timestamp: new Date(),
+            screenshot: alertScreenshot
           } as ProctorAlert);
         });
       }
