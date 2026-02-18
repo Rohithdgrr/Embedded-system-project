@@ -3,12 +3,15 @@ services:
     name: proctorclay-ai-server
     runtime: python
     plan: starter  # Free tier available but may have cold starts. Use 'starter' ($7/mo) for better performance.
-    buildCommand: pip install -r ai_backend/requirements.txt
-    startCommand: cd ai_backend && gunicorn -w 2 -b 0.0.0.0:$PORT "src.detector:app"
+    rootDir: .
+    buildCommand: |
+      pip install -r ai_backend/requirements.txt
+    startCommand: |
+      cd ai_backend && gunicorn -w 2 -b 0.0.0.0:$PORT "src.detector:app"
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
       - key: FLASK_ENV
         value: production
       - key: CORS_ORIGIN
-        value: https://embedded-system-project.vercel.app  # CHANGE THIS to your actual Vercel URL
+        value: https://embedded-system-project.vercel.app/  # CHANGE THIS to your actual Vercel URL
