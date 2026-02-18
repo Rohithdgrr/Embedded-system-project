@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:8080/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
 
 class ApiService {
   private sessionId: number | null = null;
@@ -43,7 +43,7 @@ class ApiService {
   }
 
   async startSession(id: number, streamUrl?: string) {
-    const url = streamUrl 
+    const url = streamUrl
       ? `/sessions/${id}/start?streamUrl=${encodeURIComponent(streamUrl)}`
       : `/sessions/${id}/start`;
     return this.request<any>(url, { method: 'POST' });
